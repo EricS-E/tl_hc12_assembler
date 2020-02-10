@@ -1,53 +1,63 @@
 #!/usr/bin/node
-if (process.argv.length < 3) {
-  console.log("error");
-  process.exit(1);
-}
 let fs = require("fs");
 const colors = require("ansi-colors");
-let filename = process.argv[2];
 
-let result = "";
-// let instruction = class {
-//     constructor(name, operandCount) {
-//         this.name = name;
-//         this. operandConut = operandCount;
-//     }
-// }
+let result = '';
 
-let instructionSet = [
-  "aba",
-  "abx",
-  "aby",
-  "adca",
-  "adcb",
-  "adda",
-  "addb",
-  "addd",
-  "anda",
-  "andb",
-  "andcc",
-  "asl",
-  "asld",
-  "asr",
-  "bcc",
-  "bclr",
-  "bcs",
-  "beq",
-  "bge",
-  "bgnd",
-  "bgt",
-  "bhi",
-  "end"
+
+const instructions = require("./instruction-set");
+
+let addressingModesExpressions = [
+  {   //inherent
+    type: 'inh',
+    expression: /^$/,
+  },
+  {   //immediate
+    type: 'imm',
+    expression: /^#\$?([0-9A-Fa-f]{2,4})$/,
+  },
+  {  //direct
+    type: 'dir',
+    expression: /^\$?([0-9A-Fa-f]{2})$/,
+  },
+  {  //extended
+    type: 'ext',
+    expression: /^\$?([0-9A-Fa-f]{4})$/,
+  },
+
 ];
 
-let isMnemonic = instruction => {
-  return instructionSet.includes(instruction);
+
+let isMnemonic = instructionName => {
+  let foundIndex = instructions.set.findIndex((instruction) => {
+    return instruction.name == instructionName;
+  });
+  return  foundIndex >= 0;
+};
+
+let addressingMode = (instructionName, operand) => {
+  let instructionObject = instructions.set.find((instruction) => {
+    return instruction.name == instructionName;
+  });
+  let mode = null;
+  instructionObject.modes.forEach((currentMode) => {
+    let expression = addressingModesExpressions.find((addressingExpression) => {
+      return addressingExpression.type == currentMode.type;
+    });
+    if(expression.expression.test(operand)){
+      mode = currentMode;
+    }
+  });
+  if(mode)
+    return mode;
+  else
+    return {type: 'err'}
 };
 
 function preprocessString(data) {
-  let processedData = data.replace(/\t/g, " ");
-  processedData = processedData.replace(/ +/g, " ");
+  let processedData = data.replace(/\t/g, ' ');
+  processedData = processedData.replace(/ +/g, ' ');
+  processedData = processedData.replace(/;.*\n/g, '\n');
   processedData = processedData.toLowerCase();
   return processedData;
 }
@@ -55,34 +65,47 @@ function preprocessString(data) {
 let analyseInstruction = (instruction, _index) => {
   if (instruction[0])
     if (isMnemonic(instruction[0])) {
-      result += `\tInstrunction: ${instruction[0]}\n`;
-      let operands = "";
-      instruction.slice(1).forEach(operand => {
-        operands += operand + " ";
-      });
-      result += `\tOperands: ${operands}\n`;
+      result += `\tInstruction: ${instruction[0]}\n`;
+      let operand = instruction.slice(1);
+      if(operand.length < 1)
+        result += `Error: unexpected token ${operand[1]}\n`;
+      else {
+        result += `\tOperand: ${operand}\n`;
+        let mode = addressingMode(instruction[0], instruction[1]);
+
+        result += `\Mode: ${mode.type}\n`;
+        result += `\Code: ${mode.opcode}\n`;
+        result += `\Cycles: ${mode.cycles}\n`;
+
+      }
     } else {
-      result += `Error: invalid token ${instruction[0]}\n`;
+      if(instruction[0])
+        result += `Error: invalid token ${instruction[0]}\n`;
     }
 };
 
-let analyseLine = (instruction, _index) => {
-  if (instruction != "") {
-    let fragments = instruction.split(" ");
-    if (fragments[0] == ";") return;
-    if (fragments[0] != "") {
-      result += `Tag: ${fragments[0]}\n`;
+let analyseLine = (line, _index) => {
+  if (line != '') {
+    let tokens = line.split(' ');
+    if (tokens[0] != '') {
+      result += `Tag: ${tokens[0]}\n`;
     }
-    analyseInstruction(fragments.slice(1));
+    analyseInstruction(tokens.slice(1));
   }
-  result += "\n";
+  result += '\n';
 };
+
+if (process.argv.length < 3) {
+  console.log("Usage: assembler [FILE]");
+  process.exit(1);
+}
+let filename = process.argv[2];
 
 fs.readFile(filename, "utf8", (error, rawData) => {
   if (error) console.log(error);
   else {
     let data = preprocessString(rawData);
-    let instructions = data.split("\n");
+    let instructions = data.split('\n');
     instructions.forEach((line, lineIndex) => {
       analyseLine(line, lineIndex);
     });
