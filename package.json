@@ -1,0 +1,11 @@
+{
+  "name": "Assembler",
+  "version": "1",
+  "description": "Absolute assembler for Motorola CPU12",
+  "main": "assembler.js",
+  "author": "eren",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "ansi-colors": "^4.1.1"
+  }
+}
