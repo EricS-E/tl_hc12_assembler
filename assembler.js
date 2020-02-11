@@ -12,9 +12,13 @@ let addressingModesExpressions = [
     type: 'inh',
     expression: /^$/,
   },
-  {   //immediate
-    type: 'imm',
-    expression: /^#\$?([0-9A-Fa-f]{2,4})$/,
+  {   //immediate8b
+    type: 'imm8',
+    expression: /^#\$?([0-9A-Fa-f]{2})$/,
+  },
+  {   //immediate16b
+    type: 'imm16',
+    expression: /^#\$?([0-9A-Fa-f]{4})$/,
   },
   {  //direct
     type: 'dir',
@@ -35,7 +39,7 @@ let isMnemonic = instructionName => {
   return  foundIndex >= 0;
 };
 
-let addressingMode = (instructionName, operand) => {
+let addressingMode = (instructionName, operands) => {
   let instructionObject = instructions.set.find((instruction) => {
     return instruction.name == instructionName;
   });
@@ -44,7 +48,7 @@ let addressingMode = (instructionName, operand) => {
     let expression = addressingModesExpressions.find((addressingExpression) => {
       return addressingExpression.type == currentMode.type;
     });
-    if(expression.expression.test(operand)){
+    if(expression.expression.test(operands[0]?operands[0]:'')){
       mode = currentMode;
     }
   });
@@ -67,17 +71,12 @@ let analyseInstruction = (instruction, _index) => {
     if (isMnemonic(instruction[0])) {
       result += `\tInstruction: ${instruction[0]}\n`;
       let operand = instruction.slice(1);
-      if(operand.length < 1)
-        result += `Error: unexpected token ${operand[1]}\n`;
-      else {
-        result += `\tOperand: ${operand}\n`;
-        let mode = addressingMode(instruction[0], instruction[1]);
+      result += `\tOperand: ${operand}\n`;
+      let mode = addressingMode(instruction[0], instruction.slice(1));
 
-        result += `\Mode: ${mode.type}\n`;
-        result += `\Code: ${mode.opcode}\n`;
-        result += `\Cycles: ${mode.cycles}\n`;
-
-      }
+      result += `\Mode: ${mode.type}\n`;
+      result += `\Code: ${mode.opcode}\n`;
+      result += `\Cycles: ${mode.cycles}\n`;
     } else {
       if(instruction[0])
         result += `Error: invalid token ${instruction[0]}\n`;
