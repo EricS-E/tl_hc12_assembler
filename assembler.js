@@ -7,26 +7,21 @@ let tags = [];
 
 const instructions = require("./instructions");
 
-const addressingModesExpressions = instructions.addressingModes;
+const addressingModes = instructions.addressingModes;
 const directives = instructions.directives;
-const isMnemonic = instructions.isMnemonic;
-const isDirective = instructions.isDirective;
+const findInstruction = instructions.findInstruction;
+const findDirective = instructions.findDirective;
+const findAddressingMode = instructions.findAddressingMode;
 const instructionSet = instructions.set;
+const parseNumber = instructions.parseNumber;
 
-let addressingMode = (instructionTokens) => {
-  const [instructionName, ...operands] = instructionTokens
-  let instructionInfo = instructionSet.find(instruction => {
-    return instruction.name == instructionName;
-  });
+let addressingMode = instructionTokens => {
+  const [instructionName, ...operands] = instructionTokens;
+  let instructionInfo = findInstruction(instructionName);
   let mode = null;
   instructionInfo.modes.forEach(currentMode => {
-    let expression = addressingModesExpressions.find(addressingExpression => {
-      return addressingExpression.type == currentMode.type;
-    });
-    if (
-      expression &&
-      expression.expression.test(operands[0] ? operands[0] : "")
-    ) {
+    let modeInfo = findAddressingMode(currentMode.type);
+    if (modeInfo && modeInfo.testFunction(operands)) {
       mode = currentMode;
     }
   });
@@ -42,55 +37,49 @@ function preprocessString(data) {
   return processedData;
 }
 
-function parseNumber(number) {
-  number = number.replace("#", "");
-  if (/^\$/.test(number)) return parseInt(number.replace("$", ""), 16);
-  else return parseInt(number, 10);
-}
-
-function processDirective(directive) {
-  if (directive[0] == "org") {
-    pc = parseNumber(directive[1]);
-    result += parseNumber(directive[1]).toString(16) + "\n";
+function processDirective(instructionTokens) {
+  const [directiveName, ...operands] = instructionTokens;
+  if (directiveName == "org") {
+    pc = parseNumber(operands[0]);
+    result += parseNumber(operands[0]).toString(16) + "\n";
   }
-  if (directive[0] == "bsz") {
+  if (directiveName == "bsz") {
     result += pc.toString(16) + " ";
-    for (let i = 0; i < parseNumber(directive[1]); i++) result += "00 ";
+    for (let i = 0; i < parseNumber(operands[0]); i++) result += "00 ";
     result += "\n";
-    pc += parseNumber(directive[1]);
+    pc += parseNumber(operands[0]);
   }
-  if (directive[0] == "fcb") {
+  if (directiveName == "fcb") {
     result += pc.toString(16) + " ";
-    parameters = directive.slice(1);
-    parameters.forEach(element => {
+    operands.forEach(element => {
       result += element + " ";
     });
     result += "\n";
-    pc += parameters.length;
+    pc += operands.length;
   }
-  if (directive[0] == "fcc") {
+  if (directiveName == "fcc") {
     result += pc.toString(16) + " ";
-    for (let i = 1; i < directive[1].length - 1; i++) {
-      result += directive[1].charCodeAt(i) + " ";
+    for (let i = 1; i < operands[0].length - 1; i++) {
+      result += operands[0].charCodeAt(i) + " ";
     }
     result += "\n";
-    pc += directive[1].length - 2;
+    pc += operands[0].length - 2;
   }
-  if (directive[0] == "equ") {
-    tags[tags.length - 1].address = parseNumber(directive[1]);
+  if (directiveName == "equ") {
+    tags[tags.length - 1].address = parseNumber(operands[0]);
   }
 }
 
 let analyseInstruction = (instructionTokens, _index) => {
-  if (instructionTokens[0])
-    if (isMnemonic(instructionTokens[0])) {
-      result += `\tInstruction: ${instructionTokens[0]}\n`;
-      let operands = instructionTokens.slice(1);
+  const [instructionName, ...operands] = instructionTokens;
+  if (instructionName)
+    if (!!findInstruction(instructionName)) {
+      result += `\tInstruction: ${instructionName}\n`;
       let mode = addressingMode(instructionTokens);
       if (mode.type != "err") {
         instructionSize =
           Math.ceil(mode.opcode.length / 2) +
-          addressingModesExpressions.find(amode => {
+          addressingModes.find(amode => {
             return amode.type == mode.type;
           }).length;
         result += `\tMode: ${mode.type}\n`;
@@ -101,7 +90,7 @@ let analyseInstruction = (instructionTokens, _index) => {
       } else {
         result += "\tInvalid addressing mode\n";
       }
-    } else if (isDirective(instructionTokens[0]))
+    } else if (!!findDirective(instructionTokens[0]))
       processDirective(instructionTokens);
     else if (instructionTokens[0])
       result += `Error: invalid token ${instruction[0]}\n`;

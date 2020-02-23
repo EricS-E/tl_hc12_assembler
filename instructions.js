@@ -37,31 +37,51 @@ const addressingModes = [
   {
     //inherent
     type: "inh",
-    expression: /^$/,
+    testFunction: function(operandTokens) {
+      return !operandTokens || operandTokens.length == 0;
+    },
     length: 0
   },
   {
     //immediate8b
     type: "imm8",
-    expression: /^#\$?([0-9A-Fa-f]{2})$/,
+    testFunction: function(operandTokens) {
+      if (!/^#.*/.test(operandTokens[0])) return false;
+      let numValue = parseNumber(operandTokens[0]);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, 0, 2 ** 8 - 1);
+    },
     length: 1
   },
   {
     //immediate16b
     type: "imm16",
-    expression: /^#\$?([0-9A-Fa-f]{4})$/,
+    testFunction: function(operandTokens) {
+      if (!/^#.*/.test(operandTokens[0])) return false;
+      let numValue = parseNumber(operandTokens[0]);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, 0, 2 ** 16 - 1);
+    },
     length: 2
   },
   {
     //direct
     type: "dir",
-    expression: /^\$?([0-9A-Fa-f]{2})$/,
+    testFunction: function(operandTokens) {
+      let numValue = parseNumber(operandTokens[0]);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, 0, 2 ** 8 - 1);
+    },
     length: 1
   },
   {
     //extended
     type: "ext",
-    expression: /^\$?([0-9A-Fa-f]{4})$/,
+    testFunction: function(operandTokens) {
+      let numValue = parseNumber(operandTokens[0]);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, 0, 2 ** 16 - 1);
+    },
     length: 2
   }
 ];
@@ -319,23 +339,43 @@ const set = [
   }
 ];
 
-
-const isDirective = instructionName => {
-  let foundIndex = directives.findIndex(instruction => {
-    return instruction.name == instructionName;
+const findDirective = directiveName => {
+  return directives.find(directive => {
+    return directive.name == directiveName;
   });
-  return foundIndex >= 0;
 };
 
-const isMnemonic = instructionName => {
-  let foundIndex = set.findIndex(instruction => {
+const findInstruction = instructionName => {
+  return set.find(instruction => {
     return instruction.name == instructionName;
   });
-  return foundIndex >= 0;
 };
+
+const findAddressingMode = addressingModeType => {
+  return addressingModes.find(addressingMode => {
+    return addressingMode.type == addressingModeType;
+  });
+};
+
+function parseNumber(number) {
+  number = number.replace("#", "");
+  let radix;
+  if (/^\$/.test(number)) radix = 16;
+  else if (/^\@/.test(number)) radix = 8;
+  else if (/^\%/.test(number)) radix = 2;
+  else radix = 10;
+  number = number.replace(/@|%|\$/, "");
+  return parseInt(number, radix);
+}
+
+function isInRange(number, low, high) {
+  return number >= low && number <= high;
+}
 
 exports.set = set;
 exports.addressingModes = addressingModes;
 exports.directives = directives;
-exports.isDirective = isDirective;
-exports.isMnemonic = isMnemonic;
+exports.findDirective = findDirective;
+exports.findInstruction = findInstruction;
+exports.findAddressingMode = findAddressingMode;
+exports.parseNumber = parseNumber;
