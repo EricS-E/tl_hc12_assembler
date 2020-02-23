@@ -1,5 +1,5 @@
 {
-  "name": "Assembler",
+  "name": "assembler",
   "version": "1",
   "description": "Absolute assembler for Motorola CPU12",
   "main": "assembler.js",
