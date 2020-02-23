@@ -1,4 +1,4 @@
-exports.directives = [
+const directives = [
   {
     name: "start"
   },
@@ -30,10 +30,10 @@ exports.directives = [
   },
   {
     name: "fcc"
-  },
+  }
 ];
 
-exports.addressingModes = [
+const addressingModes = [
   {
     //inherent
     type: "inh",
@@ -66,7 +66,7 @@ exports.addressingModes = [
   }
 ];
 
-exports.set = [
+const set = [
   {
     name: "aba",
     modes: [
@@ -318,3 +318,24 @@ exports.set = [
     modes: []
   }
 ];
+
+
+const isDirective = instructionName => {
+  let foundIndex = directives.findIndex(instruction => {
+    return instruction.name == instructionName;
+  });
+  return foundIndex >= 0;
+};
+
+const isMnemonic = instructionName => {
+  let foundIndex = set.findIndex(instruction => {
+    return instruction.name == instructionName;
+  });
+  return foundIndex >= 0;
+};
+
+exports.set = set;
+exports.addressingModes = addressingModes;
+exports.directives = directives;
+exports.isDirective = isDirective;
+exports.isMnemonic = isMnemonic;

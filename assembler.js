@@ -5,31 +5,21 @@ let result = "";
 let pc = 0;
 let tags = [];
 
-const instructions = require("./instruction-set");
+const instructions = require("./instructions");
 
 const addressingModesExpressions = instructions.addressingModes;
 const directives = instructions.directives;
+const isMnemonic = instructions.isMnemonic;
+const isDirective = instructions.isDirective;
+const instructionSet = instructions.set;
 
-let isDirective = instructionName => {
-  let foundIndex = instructions.directives.findIndex(instruction => {
-    return instruction.name == instructionName;
-  });
-  return foundIndex >= 0;
-};
-
-let isMnemonic = instructionName => {
-  let foundIndex = instructions.set.findIndex(instruction => {
-    return instruction.name == instructionName;
-  });
-  return foundIndex >= 0;
-};
-
-let addressingMode = (instructionName, operands) => {
-  let instructionObject = instructions.set.find(instruction => {
+let addressingMode = (instructionTokens) => {
+  const [instructionName, ...operands] = instructionTokens
+  let instructionInfo = instructionSet.find(instruction => {
     return instruction.name == instructionName;
   });
   let mode = null;
-  instructionObject.modes.forEach(currentMode => {
+  instructionInfo.modes.forEach(currentMode => {
     let expression = addressingModesExpressions.find(addressingExpression => {
       return addressingExpression.type == currentMode.type;
     });
@@ -91,12 +81,12 @@ function processDirective(directive) {
   }
 }
 
-let analyseInstruction = (instruction, _index) => {
-  if (instruction[0])
-    if (isMnemonic(instruction[0])) {
-      result += `\tInstruction: ${instruction[0]}\n`;
-      let operand = instruction.slice(1);
-      let mode = addressingMode(instruction[0], instruction.slice(1));
+let analyseInstruction = (instructionTokens, _index) => {
+  if (instructionTokens[0])
+    if (isMnemonic(instructionTokens[0])) {
+      result += `\tInstruction: ${instructionTokens[0]}\n`;
+      let operands = instructionTokens.slice(1);
+      let mode = addressingMode(instructionTokens);
       if (mode.type != "err") {
         instructionSize =
           Math.ceil(mode.opcode.length / 2) +
@@ -105,21 +95,16 @@ let analyseInstruction = (instruction, _index) => {
           }).length;
         result += `\tMode: ${mode.type}\n`;
         result += `${pc.toString(16)} ${mode.opcode} ${
-          operand[0] ? parseNumber(operand[0]).toString(16) : ""
+          operands[0] ? parseNumber(operands[0]).toString(16) : ""
         }\n`;
         pc += instructionSize;
-      }
-      else {
-        result += '\tInvalid addressing mode\n'
-      }
-    } else {
-      if (isDirective(instruction[0])) {
-        processDirective(instruction);
       } else {
-        if (instruction[0])
-          result += `Error: invalid token ${instruction[0]}\n`;
+        result += "\tInvalid addressing mode\n";
       }
-    }
+    } else if (isDirective(instructionTokens[0]))
+      processDirective(instructionTokens);
+    else if (instructionTokens[0])
+      result += `Error: invalid token ${instruction[0]}\n`;
 };
 
 let analyseLine = (line, _index) => {
@@ -147,13 +132,12 @@ fs.readFile(filename, "utf8", (error, rawData) => {
     instructions.forEach((line, lineIndex) => {
       analyseLine(line, lineIndex);
     });
-    // console.log(result.toUpperCase());
     tags.forEach(tag => {
       console.log(tag.tag, tag.address.toString(16));
-      data = data.replace(' ' + tag.tag, ' $' + tag.address.toString(16));
+      data = data.replace(" " + tag.tag, " $" + tag.address.toString(16));
     });
     instructions = data.split("\n");
-    result = '';
+    result = "";
     instructions.forEach((line, lineIndex) => {
       analyseLine(line, lineIndex);
     });
