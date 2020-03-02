@@ -21,7 +21,7 @@ let addressingMode = instructionTokens => {
   let mode = null;
   instructionInfo.modes.forEach(currentMode => {
     let modeInfo = findAddressingMode(currentMode.type);
-    if (modeInfo && modeInfo.testFunction(operands)) {
+    if (modeInfo && modeInfo.testFunction(operands, pc)) {
       mode = currentMode;
     }
   });
@@ -83,12 +83,13 @@ let analyseInstruction = (instructionTokens, _index) => {
             return amode.type == mode.type;
           }).length;
         result += `\tMode: ${mode.type}\n`;
-        result += `${pc.toString(16)} ${mode.opcode} ${
-          operands[0] ? parseNumber(operands[0]).toString(16) : ""
-        }\n`;
+
+        let modeInfo = findAddressingMode(mode.type);
+        let parsedOperands = modeInfo.parseFunction(operands, pc);
+        result += `${pc.toString(16)} ${mode.opcode} ${parsedOperands }\n`;
         pc += instructionSize;
       } else {
-        result += "\tInvalid addressing mode\n";
+        result += "\tInvalid addressing mode or range\n";
       }
     } else if (!!findDirective(instructionTokens[0]))
       processDirective(instructionTokens);

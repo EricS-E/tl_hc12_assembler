@@ -40,16 +40,22 @@ const addressingModes = [
     testFunction: function(operandTokens) {
       return !operandTokens || operandTokens.length == 0;
     },
+    parseFunction: function(operandTokens, _pc) {
+      return '';
+    },
     length: 0
   },
   {
     //immediate8b
     type: "imm8",
-    testFunction: function(operandTokens) {
+    testFunction: function(operandTokens, _pc) {
       if (!/^#.*/.test(operandTokens[0])) return false;
       let numValue = parseNumber(operandTokens[0]);
       if (isNaN(numValue)) return false;
       return isInRange(numValue, 0, 2 ** 8 - 1);
+    },
+    parseFunction: function(operandTokens, _pc) {
+      return parseNumber(operandTokens[0]).toString(16);
     },
     length: 1
   },
@@ -62,6 +68,9 @@ const addressingModes = [
       if (isNaN(numValue)) return false;
       return isInRange(numValue, 0, 2 ** 16 - 1);
     },
+    parseFunction: function(operandTokens, _pc) {
+      return parseNumber(operandTokens[0]).toString(16);
+    },
     length: 2
   },
   {
@@ -72,6 +81,9 @@ const addressingModes = [
       if (isNaN(numValue)) return false;
       return isInRange(numValue, 0, 2 ** 8 - 1);
     },
+    parseFunction: function(operandTokens, _pc) {
+      return parseNumber(operandTokens[0]).toString(16);
+    },
     length: 1
   },
   {
@@ -81,6 +93,41 @@ const addressingModes = [
       let numValue = parseNumber(operandTokens[0]);
       if (isNaN(numValue)) return false;
       return isInRange(numValue, 0, 2 ** 16 - 1);
+    },
+    parseFunction: function(operandTokens, _pc) {
+      return parseNumber(operandTokens[0]).toString(16);
+    },
+    length: 2
+  },
+  {
+    //relational8b
+    type: "rel8",
+    testFunction: function(operandTokens, pc) {
+      let numValue = parseNumber(operandTokens[0]);
+      if (isNaN(numValue)) return false;
+      let offset = numValue - (pc + 2);
+      return isInRange(offset, -(2**7), 2**7);
+    },
+    parseFunction: function(operandTokens, pc) {
+      let numValue = parseNumber(operandTokens[0]);
+      let offset = numValue - (pc + 2);
+      return offset.toString(16);
+    },
+    length: 1
+  },
+  {
+    //relational16b
+    type: "rel16",
+    testFunction: function(operandTokens, pc) {
+      let numValue = parseNumber(operandTokens[0]);
+      if (isNaN(numValue)) return false;
+      let offset = numValue - (pc + 4);
+      return isInRange(offset, -(2**16), 2**16 - 1);
+    },
+    parseFunction: function(operandTokens, pc) {
+      let numValue = parseNumber(operandTokens[0]);
+      let offset = numValue - (pc + 4);
+      return offset.toString(16);
     },
     length: 2
   }
@@ -319,7 +366,13 @@ const set = [
   },
   {
     name: "beq",
-    modes: []
+    modes: [
+      {
+        type: "rel8",
+        opcode: "27",
+        cycles: '3/1'
+      }
+    ]
   },
   {
     name: "bge",
@@ -336,7 +389,17 @@ const set = [
   {
     name: "bhi",
     modes: []
-  }
+  },
+  {
+    name: "bne",
+    modes: [
+      {
+        type: "rel8",
+        opcode: "26",
+        cycles: '3/1'
+      }
+    ]
+  },
 ];
 
 const findDirective = directiveName => {
