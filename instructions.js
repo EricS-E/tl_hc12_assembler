@@ -111,7 +111,7 @@ const addressingModes = [
     parseFunction: function(operandTokens, pc) {
       let numValue = parseNumber(operandTokens[0]);
       let offset = numValue - (pc + 2);
-      return offset.toString(16);
+      return parseInt(twosComplement(offset, 8), 2).toString(16);
     },
     length: 1
   },
@@ -127,10 +127,23 @@ const addressingModes = [
     parseFunction: function(operandTokens, pc) {
       let numValue = parseNumber(operandTokens[0]);
       let offset = numValue - (pc + 4);
-      return offset.toString(16);
+      return parseInt(twosComplement(offset, 16), 2).toString(16).padStart(4, '0');
     },
     length: 2
-  }
+  },
+  {
+    //extended
+    type: "ext",
+    testFunction: function(operandTokens) {
+      let numValue = parseNumber(operandTokens[0]);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, 0, 2 ** 16 - 1);
+    },
+    parseFunction: function(operandTokens, _pc) {
+      return parseNumber(operandTokens[0]).toString(16);
+    },
+    length: 1
+  },
 ];
 
 const set = [
@@ -400,6 +413,26 @@ const set = [
       }
     ]
   },
+  {
+    name: "lbne",
+    modes: [
+      {
+        type: "rel16",
+        opcode: "1826",
+        cycles: '3/1'
+      }
+    ]
+  },
+  {
+    name: "jmp",
+    modes: [
+      {
+        type: "ext",
+        opcode: "06",
+        cycles: 3
+      }
+    ]
+  },
 ];
 
 const findDirective = directiveName => {
@@ -434,6 +467,28 @@ function parseNumber(number) {
 function isInRange(number, low, high) {
   return number >= low && number <= high;
 }
+
+function twosComplement(value, bitCount) {
+  let binaryStr;
+  
+  if (value >= 0) {
+    let twosComp = value.toString(2);
+    binaryStr    = padAndChop(twosComp, '0', (bitCount || twosComp.length));
+  } else {
+    binaryStr = (Math.pow(2, bitCount) + value).toString(2);
+    
+    if (Number(binaryStr) < 0) {
+      return undefined
+    }
+  }
+  
+  return `${binaryStr}`;
+}
+
+function padAndChop(str, padChar, length) {
+  return (Array(length).fill(padChar).join('') + str).slice(length * -1);
+}
+
 
 exports.set = set;
 exports.addressingModes = addressingModes;

@@ -86,7 +86,7 @@ let analyseInstruction = (instructionTokens, _index) => {
 
         let modeInfo = findAddressingMode(mode.type);
         let parsedOperands = modeInfo.parseFunction(operands, pc);
-        result += `${pc.toString(16)} ${mode.opcode} ${parsedOperands }\n`;
+        result += `${pc.toString(16)} ${mode.opcode} ${parsedOperands}\n`;
         pc += instructionSize;
       } else {
         result += "\tInvalid addressing mode or range\n";
@@ -124,6 +124,8 @@ fs.readFile(filename, "utf8", (error, rawData) => {
     });
     tags.forEach(tag => {
       console.log(tag.tag, tag.address.toString(16));
+      //TODO properly replace tag values
+      data = data.replace(" " + tag.tag, " $" + tag.address.toString(16));
       data = data.replace(" " + tag.tag, " $" + tag.address.toString(16));
     });
     instructions = data.split("\n");
