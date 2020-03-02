@@ -106,7 +106,7 @@ const addressingModes = [
       let numValue = parseNumber(operandTokens[0]);
       if (isNaN(numValue)) return false;
       let offset = numValue - (pc + 2);
-      return isInRange(offset, -(2**7), 2**7);
+      return isInRange(offset, -(2**7), 2**7 - 1);
     },
     parseFunction: function(operandTokens, pc) {
       let numValue = parseNumber(operandTokens[0]);
@@ -122,7 +122,7 @@ const addressingModes = [
       let numValue = parseNumber(operandTokens[0]);
       if (isNaN(numValue)) return false;
       let offset = numValue - (pc + 4);
-      return isInRange(offset, -(2**16), 2**16 - 1);
+      return isInRange(offset, -(2**15), 2**15 - 1);
     },
     parseFunction: function(operandTokens, pc) {
       let numValue = parseNumber(operandTokens[0]);
