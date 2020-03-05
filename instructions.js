@@ -30,6 +30,9 @@ const directives = [
   },
   {
     name: "fcc"
+  },
+  {
+    name: "dc.b"
   }
 ];
 
@@ -49,13 +52,13 @@ const addressingModes = [
     //immediate8b
     type: "imm8",
     testFunction: function(operandTokens, _pc) {
-      if (!/^#.*/.test(operandTokens[0])) return false;
+      if (!(/^#.*/.test(operandTokens[0]))) return false;
       let numValue = parseNumber(operandTokens[0]);
       if (isNaN(numValue)) return false;
       return isInRange(numValue, 0, 2 ** 8 - 1);
     },
     parseFunction: function(operandTokens, _pc) {
-      return parseNumber(operandTokens[0]).toString(16);
+      return parseNumber(operandTokens[0]).toString(16).padStart(2, '0');
     },
     length: 1
   },
@@ -69,7 +72,7 @@ const addressingModes = [
       return isInRange(numValue, 0, 2 ** 16 - 1);
     },
     parseFunction: function(operandTokens, _pc) {
-      return parseNumber(operandTokens[0]).toString(16);
+      return parseNumber(operandTokens[0]).toString(16).padStart(4, '0');
     },
     length: 2
   },
@@ -77,12 +80,13 @@ const addressingModes = [
     //direct
     type: "dir",
     testFunction: function(operandTokens) {
+      if (/^#.*/.test(operandTokens[0])) return false;
       let numValue = parseNumber(operandTokens[0]);
       if (isNaN(numValue)) return false;
       return isInRange(numValue, 0, 2 ** 8 - 1);
     },
     parseFunction: function(operandTokens, _pc) {
-      return parseNumber(operandTokens[0]).toString(16);
+      return parseNumber(operandTokens[0]).toString(16).padStart(2, '0');
     },
     length: 1
   },
@@ -90,12 +94,13 @@ const addressingModes = [
     //extended
     type: "ext",
     testFunction: function(operandTokens) {
+      if (/^#.*/.test(operandTokens[0])) return false;
       let numValue = parseNumber(operandTokens[0]);
       if (isNaN(numValue)) return false;
       return isInRange(numValue, 0, 2 ** 16 - 1);
     },
     parseFunction: function(operandTokens, _pc) {
-      return parseNumber(operandTokens[0]).toString(16);
+      return parseNumber(operandTokens[0]).toString(16).padStart(4, '0');
     },
     length: 2
   },
@@ -111,7 +116,7 @@ const addressingModes = [
     parseFunction: function(operandTokens, pc) {
       let numValue = parseNumber(operandTokens[0]);
       let offset = numValue - (pc + 2);
-      return parseInt(twosComplement(offset, 8), 2).toString(16);
+      return parseInt(twosComplement(offset, 8), 2).toString(16).padStart(2, '0');
     },
     length: 1
   },
@@ -131,19 +136,19 @@ const addressingModes = [
     },
     length: 2
   },
-  {
-    //extended
-    type: "ext",
-    testFunction: function(operandTokens) {
-      let numValue = parseNumber(operandTokens[0]);
-      if (isNaN(numValue)) return false;
-      return isInRange(numValue, 0, 2 ** 16 - 1);
-    },
-    parseFunction: function(operandTokens, _pc) {
-      return parseNumber(operandTokens[0]).toString(16);
-    },
-    length: 1
-  },
+  // {
+  //   //extended
+  //   type: "ext",
+  //   testFunction: function(operandTokens) {
+  //     let numValue = parseNumber(operandTokens[0]);
+  //     if (isNaN(numValue)) return false;
+  //     return isInRange(numValue, 0, 2 ** 16 - 1);
+  //   },
+  //   parseFunction: function(operandTokens, _pc) {
+  //     return parseNumber(operandTokens[0]).toString(16);
+  //   },
+  //   length: 2
+  // },
 ];
 
 const set = [

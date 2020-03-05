@@ -41,7 +41,7 @@ function processDirective(instructionTokens) {
   const [directiveName, ...operands] = instructionTokens;
   if (directiveName == "org") {
     pc = parseNumber(operands[0]);
-    result += parseNumber(operands[0]).toString(16) + "\n";
+    result += parseNumber(operands[0]).toString(16).padStart(4, '0') + "\n";
   }
   if (directiveName == "bsz") {
     result += pc.toString(16) + " ";
@@ -52,7 +52,7 @@ function processDirective(instructionTokens) {
   if (directiveName == "fcb") {
     result += pc.toString(16) + " ";
     operands.forEach(element => {
-      result += element + " ";
+      result += parseInt(element).toString(16) + " ";
     });
     result += "\n";
     pc += operands.length;
@@ -67,6 +67,15 @@ function processDirective(instructionTokens) {
   }
   if (directiveName == "equ") {
     tags[tags.length - 1].address = parseNumber(operands[0]);
+  }
+  if (directiveName == "dc.b" ) {
+    result += pc.toString(16) + " ";
+    dirOperands = operands[0].split(',').map(e => parseInt(e).toString(16).padStart(2, '0'));
+    dirOperands.forEach(element => {
+      result += element + " ";
+    });
+    result += "\n";
+    pc += dirOperands.length;
   }
 }
 
@@ -94,7 +103,7 @@ let analyseInstruction = (instructionTokens, _index) => {
     } else if (!!findDirective(instructionTokens[0]))
       processDirective(instructionTokens);
     else if (instructionTokens[0])
-      result += `Error: invalid token ${instruction[0]}\n`;
+      result += `Error: invalid token ${instructionName}\n`;
 };
 
 let analyseLine = (line, _index) => {
