@@ -1,3 +1,30 @@
+const registers = [
+  {
+    name: 'a',
+    rel9code: '0'
+  },
+  {
+    name: 'b',
+    rel9code: '1'
+  },
+  {
+    name: 'd',
+    rel9code: '4'
+  },
+  {
+    name: 'x',
+    rel9code: '5'
+  },
+  {
+    name: 'y',
+    rel9code: '6'
+  },
+  {
+    name: 'sp',
+    rel9code: '7'
+  },
+];
+
 const directives = [
   {
     name: "start"
@@ -105,7 +132,7 @@ const addressingModes = [
     length: 2
   },
   {
-    //relational8b
+    //relative8b
     type: "rel8",
     testFunction: function(operandTokens, pc) {
       let numValue = parseNumber(operandTokens[0]);
@@ -121,7 +148,7 @@ const addressingModes = [
     length: 1
   },
   {
-    //relational16b
+    //relative16b
     type: "rel16",
     testFunction: function(operandTokens, pc) {
       let numValue = parseNumber(operandTokens[0]);
@@ -136,19 +163,33 @@ const addressingModes = [
     },
     length: 2
   },
-  // {
-  //   //extended
-  //   type: "ext",
-  //   testFunction: function(operandTokens) {
-  //     let numValue = parseNumber(operandTokens[0]);
-  //     if (isNaN(numValue)) return false;
-  //     return isInRange(numValue, 0, 2 ** 16 - 1);
-  //   },
-  //   parseFunction: function(operandTokens, _pc) {
-  //     return parseNumber(operandTokens[0]).toString(16);
-  //   },
-  //   length: 2
-  // },
+  {
+    //relative9b
+    type: "rel9",
+    testFunction: function(operandTokens, pc) {
+      let [reg, target] = operandTokens[0].split(',');
+      if(!findRegister(reg))
+        return false;
+      let numValue = parseNumber(target);
+      if (isNaN(numValue)) return false;
+      let offset = numValue - (pc + 3);
+      return isInRange(offset, -(2**8-1), 2**8-1);
+    },
+    parseFunction: function(operandTokens, pc, mode) {
+      let [reg, target] = operandTokens[0].split(',');
+      let regInfo = findRegister(reg);
+      let numValue = parseNumber(target);
+      let offset = numValue - (pc + 3);
+      let secondCode;
+      if(Math.sign(offset) == -1)
+        secondCode = (parseInt(mode.secOpcode, 16) + 1).toString(16);
+      else
+        secondCode = mode.secOpcode;
+      secondCode += regInfo.rel9code;
+      return `${secondCode} ${Math.abs(offset)}`;
+    },
+    length: 2
+  },
 ];
 
 const set = [
@@ -158,7 +199,6 @@ const set = [
       {
         type: "inh",
         opcode: "1806",
-        cycles: 2
       }
     ]
   },
@@ -170,17 +210,14 @@ const set = [
       {
         type: "imm8",
         opcode: "89",
-        cycles: 1
       },
       {
         type: "dir",
         opcode: "99",
-        cycles: 3
       },
       {
         type: "ext",
         opcode: "b9",
-        cycles: 3
       }
     ]
   },
@@ -190,17 +227,14 @@ const set = [
       {
         type: "imm8",
         opcode: "c9",
-        cycles: 1
       },
       {
         type: "dir",
         opcode: "d9",
-        cycles: 3
       },
       {
         type: "ext",
         opcode: "f9",
-        cycles: 3
       }
     ]
   },
@@ -210,17 +244,14 @@ const set = [
       {
         type: "imm8",
         opcode: "8b",
-        cycles: 1
       },
       {
         type: "dir",
         opcode: "9b",
-        cycles: 3
       },
       {
         type: "ext",
         opcode: "bb",
-        cycles: 3
       }
     ]
   },
@@ -230,17 +261,14 @@ const set = [
       {
         type: "imm8",
         opcode: "cb",
-        cycles: 1
       },
       {
         type: "dir",
         opcode: "db",
-        cycles: 3
       },
       {
         type: "ext",
         opcode: "fb",
-        cycles: 3
       }
     ]
   },
@@ -250,17 +278,14 @@ const set = [
       {
         type: "imm16",
         opcode: "c3",
-        cycles: 2
       },
       {
         type: "dir",
         opcode: "d3",
-        cycles: 3
       },
       {
         type: "ext",
         opcode: "f3",
-        cycles: 3
       }
     ]
   },
@@ -270,17 +295,14 @@ const set = [
       {
         type: "imm8",
         opcode: "84",
-        cycles: 1
       },
       {
         type: "dir",
         opcode: "94",
-        cycles: 3
       },
       {
         type: "ext",
         opcode: "b4",
-        cycles: 3
       }
     ]
   },
@@ -290,17 +312,14 @@ const set = [
       {
         type: "imm8",
         opcode: "c4",
-        cycles: 1
       },
       {
         type: "dir",
         opcode: "d4",
-        cycles: 3
       },
       {
         type: "ext",
         opcode: "f4",
-        cycles: 3
       }
     ]
   },
@@ -310,7 +329,6 @@ const set = [
       {
         type: "imm8",
         opcode: "10",
-        cycles: 1
       }
     ]
   },
@@ -320,7 +338,6 @@ const set = [
       {
         type: "ext",
         opcode: "78",
-        cycles: 4
       }
     ]
   },
@@ -330,7 +347,6 @@ const set = [
       {
         type: "inh",
         opcode: "48",
-        cycles: 1
       }
     ]
   },
@@ -340,7 +356,6 @@ const set = [
       {
         type: "inh",
         opcode: "58",
-        cycles: 1
       }
     ]
   },
@@ -350,7 +365,6 @@ const set = [
       {
         type: "inh",
         opcode: "59",
-        cycles: 1
       }
     ]
   },
@@ -360,7 +374,6 @@ const set = [
       {
         type: "ext",
         opcode: "77",
-        cycles: 4
       }
     ]
   },
@@ -370,7 +383,6 @@ const set = [
       {
         type: "inh",
         opcode: "47",
-        cycles: 1
       }
     ]
   },
@@ -388,7 +400,6 @@ const set = [
       {
         type: "rel8",
         opcode: "27",
-        cycles: '3/1'
       }
     ]
   },
@@ -414,7 +425,6 @@ const set = [
       {
         type: "rel8",
         opcode: "26",
-        cycles: '3/1'
       }
     ]
   },
@@ -424,7 +434,6 @@ const set = [
       {
         type: "rel16",
         opcode: "1826",
-        cycles: '3/1'
       }
     ]
   },
@@ -434,7 +443,16 @@ const set = [
       {
         type: "ext",
         opcode: "06",
-        cycles: 3
+      }
+    ]
+  },
+  {
+    name: "ibne",
+    modes: [
+      {
+        type: "rel9",
+        opcode: "04",
+        secOpcode: 'a',
       }
     ]
   },
@@ -455,6 +473,12 @@ const findInstruction = instructionName => {
 const findAddressingMode = addressingModeType => {
   return addressingModes.find(addressingMode => {
     return addressingMode.type == addressingModeType;
+  });
+};
+
+const findRegister = regName => {
+  return registers.find(register => {
+    return register.name == regName;
   });
 };
 

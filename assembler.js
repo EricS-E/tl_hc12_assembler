@@ -94,7 +94,7 @@ let analyseInstruction = (instructionTokens, _index) => {
         result += `\tMode: ${mode.type}\n`;
 
         let modeInfo = findAddressingMode(mode.type);
-        let parsedOperands = modeInfo.parseFunction(operands, pc);
+        let parsedOperands = modeInfo.parseFunction(operands, pc, mode);
         result += `${pc.toString(16)} ${mode.opcode} ${parsedOperands}\n`;
         pc += instructionSize;
       } else {
@@ -131,17 +131,19 @@ fs.readFile(filename, "utf8", (error, rawData) => {
     instructions.forEach((line, lineIndex) => {
       analyseLine(line, lineIndex);
     });
+    console.log('TABSIM:\n')
     tags.forEach(tag => {
       console.log(tag.tag, tag.address.toString(16));
       //TODO properly replace tag values
-      data = data.replace(" " + tag.tag, " $" + tag.address.toString(16));
-      data = data.replace(" " + tag.tag, " $" + tag.address.toString(16));
+      data = data.replace(new RegExp(` ${tag.tag}`, 'g'), ' $' + tag.address.toString(16));
+      data = data.replace(new RegExp(`,${tag.tag}`, 'g'), ',$' + tag.address.toString(16));
     });
     instructions = data.split("\n");
     result = "";
     instructions.forEach((line, lineIndex) => {
       analyseLine(line, lineIndex);
     });
+    console.log('\nRESULT:\n')
     console.log(result.toUpperCase());
   }
 });
