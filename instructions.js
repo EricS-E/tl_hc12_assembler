@@ -173,7 +173,7 @@ const addressingModes = [
       let numValue = parseNumber(target);
       if (isNaN(numValue)) return false;
       let offset = numValue - (pc + 3);
-      return isInRange(offset, -(2**8-1), 2**8-1);
+      return isInRange(offset, -(2**8), 2**8-1);
     },
     parseFunction: function(operandTokens, pc, mode) {
       let [reg, target] = operandTokens[0].split(',');
@@ -181,12 +181,14 @@ const addressingModes = [
       let numValue = parseNumber(target);
       let offset = numValue - (pc + 3);
       let secondCode;
-      if(Math.sign(offset) == -1)
+      if(Math.sign(offset) == -1){
         secondCode = (parseInt(mode.secOpcode, 16) + 1).toString(16);
+        offset = parseInt(twosComplement(offset, 8), 2);
+      }
       else
         secondCode = mode.secOpcode;
       secondCode += regInfo.rel9code;
-      return `${secondCode} ${Math.abs(offset)}`;
+      return `${secondCode} ${offset.toString(16)}`;
     },
     length: 2
   },
@@ -465,9 +467,10 @@ const findDirective = directiveName => {
 };
 
 const findInstruction = instructionName => {
-  return set.find(instruction => {
+  const foundInstruction = set.find(instruction => {
     return instruction.name == instructionName;
   });
+  return foundInstruction;
 };
 
 const findAddressingMode = addressingModeType => {
@@ -499,18 +502,18 @@ function isInRange(number, low, high) {
 
 function twosComplement(value, bitCount) {
   let binaryStr;
-  
+
   if (value >= 0) {
     let twosComp = value.toString(2);
     binaryStr    = padAndChop(twosComp, '0', (bitCount || twosComp.length));
   } else {
     binaryStr = (Math.pow(2, bitCount) + value).toString(2);
-    
+
     if (Number(binaryStr) < 0) {
       return undefined
     }
   }
-  
+
   return `${binaryStr}`;
 }
 

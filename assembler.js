@@ -19,6 +19,8 @@ let addressingMode = instructionTokens => {
   const [instructionName, ...operands] = instructionTokens;
   let instructionInfo = findInstruction(instructionName);
   let mode = null;
+  if(instructionInfo.modes.length == 1)
+    return instructionInfo.modes[0];
   instructionInfo.modes.forEach(currentMode => {
     let modeInfo = findAddressingMode(currentMode.type);
     if (modeInfo && modeInfo.testFunction(operands, pc)) {
@@ -134,7 +136,6 @@ fs.readFile(filename, "utf8", (error, rawData) => {
     console.log('TABSIM:\n')
     tags.forEach(tag => {
       console.log(tag.tag, tag.address.toString(16));
-      //TODO properly replace tag values
       data = data.replace(new RegExp(` ${tag.tag}`, 'g'), ' $' + tag.address.toString(16));
       data = data.replace(new RegExp(`,${tag.tag}`, 'g'), ',$' + tag.address.toString(16));
     });
