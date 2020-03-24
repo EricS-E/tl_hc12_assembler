@@ -13,15 +13,22 @@ const registers = [
   },
   {
     name: 'x',
-    rel9code: '5'
+    rel9code: '5',
+    indexedCode: '000'
   },
   {
     name: 'y',
-    rel9code: '6'
+    rel9code: '6',
+    indexedCode: '01'
   },
   {
     name: 'sp',
-    rel9code: '7'
+    rel9code: '7',
+    indexedCode: '10'
+  },
+  {
+    name: 'pc',
+    indexedCode: '11'
   },
 ];
 
@@ -34,23 +41,18 @@ const directives = [
   },
   {
     name: "org",
-    expression: /^\$?([0-9A-Fa-f]{1-4})$/
   },
   {
     name: "equ",
-    expression: /^\$?([0-9A-Fa-f]{1-4})$/
   },
   {
     name: "bsz",
-    expression: /^\$?([0-9A-Fa-f]{1-4})$/
   },
   {
     name: "zmb",
-    expression: /^\$?([0-9A-Fa-f]{1-4})$/
   },
   {
     name: "fill",
-    expression: /^\$?([0-9A-Fa-f]{1-4}),([0-9A-Fa-f]{1-4})$/
   },
   {
     name: "fcb"
@@ -191,6 +193,84 @@ const addressingModes = [
       return `${secondCode} ${offset.toString(16)}`;
     },
     length: 2
+  },{
+    //indexed 1 - 5b
+    type: "idx1_5b",
+    testFunction: function(operandTokens, pc) {
+      let [offset, reg] = operandTokens[0].split(',');
+      if(!findRegister(reg) || !findRegister(reg).indexedCode)
+        return false;
+      let numValue = parseNumber(offset);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, -(2**4), 2**4-1);
+    },
+    parseFunction: function(operandTokens, pc, mode) {
+      let [offset, reg] = operandTokens[0].split(',');
+      if(!findRegister(reg))
+        return false;
+      let numValue = parseNumber(offset);
+      let regInfo = findRegister(reg);
+      let bx = '';
+
+      bx += regInfo.indexedCode + '0';
+      bx += twosComplement(numValue, 5).padStart(5, '0')
+
+      return `${bx}`;
+    },
+    length: 1
+  },{
+    //indexed 1 - 9b
+    type: "idx1_9b",
+    testFunction: function(operandTokens, pc) {
+      let [offset, reg] = operandTokens[0].split(',');
+      if(!findRegister(reg) || !findRegister(reg).indexedCode)
+        return false;
+      let numValue = parseNumber(offset);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, -(2**8), 2**8-1);
+    },
+    parseFunction: function(operandTokens, pc, mode) {
+      let [offset, reg] = operandTokens[0].split(',');
+      if(!findRegister(reg))
+        return false;
+      let numValue = parseNumber(offset);
+      let regInfo = findRegister(reg);
+      let bx = '';
+
+      bx += '111' + regInfo.indexedCode + '0' + '0';
+      bx += (+(Math.sign(numValue) == -1)).toString();
+      bx = parseInt(bx, 2).toString(16).padStart(2, '0');
+      offset = parseInt(twosComplement(numValue, 8), 2).toString(16).padStart(2, '0');
+      
+      return `${bx} ${offset}`;
+    },
+    length: 2
+  },{
+    //indexed 1 - 16b
+    type: "idx1_16b",
+    testFunction: function(operandTokens, pc) {
+      let [offset, reg] = operandTokens[0].split(',');
+      if(!findRegister(reg) || !findRegister(reg).indexedCode)
+        return false;
+      let numValue = parseNumber(offset);
+      if (isNaN(numValue)) return false;
+      return isInRange(numValue, -(2**15), 2**15-1);
+    },
+    parseFunction: function(operandTokens, pc, mode) {
+      let [offset, reg] = operandTokens[0].split(',');
+      if(!findRegister(reg))
+        return false;
+      let numValue = parseNumber(offset);
+      let regInfo = findRegister(reg);
+      let bx = '';
+
+      bx += '111' + regInfo.indexedCode + '010';
+      bx = parseInt(bx, 2).toString(16).padStart(2, '0');
+      offset = parseInt(twosComplement(numValue, 16), 2).toString(16).padStart(4, '0');
+
+      return `${bx} ${offset}`;
+    },
+    length: 3
   },
 ];
 
@@ -486,6 +566,8 @@ const findRegister = regName => {
 };
 
 function parseNumber(number) {
+  if(number == '')
+    return 0;
   number = number.replace("#", "");
   let radix;
   if (/^\$/.test(number)) radix = 16;
