@@ -18,16 +18,10 @@ const parseNumber = instructions.parseNumber;
 let addressingMode = (instructionTokens) => {
   const [instructionName, ...operands] = instructionTokens;
   let instructionInfo = findInstruction(instructionName);
-  let mode = null;
-  if (instructionInfo.modes.length == 1) return instructionInfo.modes[0];
-  instructionInfo.modes.forEach((currentMode) => {
+  return instructionInfo.modes.find((currentMode) => {
     let modeInfo = findAddressingMode(currentMode.type);
-    if (modeInfo && modeInfo.testFunction(operands, pc)) {
-      mode = currentMode;
-    }
-  });
-  if (mode) return mode;
-  else return { type: 'err' };
+    return (modeInfo && modeInfo.testFunction(operands, pc));
+  }) || { type: 'err' };
 };
 
 function preprocessString(data) {
