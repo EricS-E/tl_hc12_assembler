@@ -3,9 +3,7 @@
   "version": "1",
   "description": "Absolute assembler for Motorola CPU12",
   "main": "assembler.js",
-  "author": "eren",
+  "author": "Eric",
   "license": "GPL-3.0",
-  "dependencies": {
-    "ansi-colors": "^4.1.1"
-  }
+  "dependencies": {}
 }
